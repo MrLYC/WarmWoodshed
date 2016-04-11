@@ -77,9 +77,9 @@ Controler.prototype.tryActivate = function () {
 };
 
 
-function Butler(tick, lightInterval) {
+function Butler(tick, intervals) {
     this.tick = tick;
-    this.lightInterval = lightInterval;
+    this.intervals = intervals;
     this.events = {
         onStart: new Event("onStart"),
         onInterval: new Event("onInterval"),
@@ -87,7 +87,7 @@ function Butler(tick, lightInterval) {
     };
     this.timer = undefined;
     this.controlers = undefined;
-    this.Interval = 0;
+    this.interval_count = 0;
 }
 
 Butler.prototype.start = function () {
@@ -96,13 +96,13 @@ Butler.prototype.start = function () {
     }
 
     this.controlers = getControlers();
-    this.Interval = 0;
+    this.interval_count = 0;
 
     this.events.onStart.notify(this);
 
     this.timer = activateInterval(this);
     this.events.onInterval.register(function () {
-        this.Interval += 1;
+        this.interval_count += 1;
     });
 };
 
@@ -126,8 +126,16 @@ Butler.prototype.auto_check = function () {
         }
         this.controlers.traps.tryActivate();
 
-        if (this.Interval % this.lightInterval === 0) {
+        var intervals = this.intervals;
+
+        if (intervals.light && this.interval_count % intervals.light === 0) {
             this.controlers.light.tryActivate();
+        }
+        if (intervals.buildTrap && this.interval_count % intervals.buildTrap === 0) {
+            this.controlers.buildTrap.activate();
+        }
+        if (intervals.buildHut && this.interval_count % intervals.buildHut === 0) {
+            this.controlers.buildHut.activate();
         }
     });
 };
@@ -138,6 +146,8 @@ function getControlers() {
         light: getControlerFromId("lightButton"),
         gather: getControlerFromId("gatherButton"),
         traps: getControlerFromId("trapsButton"),
+        buildTrap: getControlerFromId("build_trap"),
+        buildHut: getControlerFromId("build_hut"),
     };
 }
 
@@ -149,7 +159,11 @@ function activateInterval(butler) {
 }
 
 (function main() {
-    var butler = new Butler(500, 30);
+    var butler = new Butler(500, {
+        light: 30,
+        buildTrap: 1200,
+        buildHut: 1800,
+    });
     butler.start();
     butler.auto_check();
 })();
